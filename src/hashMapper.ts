@@ -5,13 +5,8 @@ import { setGameVersionHashMap } from './actions/session';
 import { IHashEntry, IHashMap } from './types/types';
 
 import { fs, selectors, types, util } from 'vortex-api';
+import { DEBUG_MODE, HASHMAP_LINK, HASHMAP_LOCAL_PATH } from './constants';
 
-const HASHMAP_FILENAME = 'gameversion_hashmap.json';
-const HASHMAP_LINK =
-  `https://raw.githubusercontent.com/Nexus-Mods/Vortex/announcements/${HASHMAP_FILENAME}`;
-
-const DEBUG_MODE: boolean = false;
-const HASHMAP_LOCAL_PATH = path.join(__dirname, HASHMAP_FILENAME);
 export async function hashMapFromFile() {
   const data = await fs.readFileAsync(HASHMAP_LOCAL_PATH);
   try {

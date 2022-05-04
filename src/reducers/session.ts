@@ -8,8 +8,14 @@ const sessionReducer: types.IReducerSpec = {
       const { gameId, hashMap } = payload;
       return util.setSafe(state, [gameId], hashMap);
     },
+    [actions.setShowHashDialog as any]: (state, payload) => {
+      const { show } = payload;
+      return util.setSafe(state, ['showDialog'], show);
+    },
   },
-  defaults: {},
+  defaults: {
+    showDialog: false,
+  },
 };
 
 export default sessionReducer;

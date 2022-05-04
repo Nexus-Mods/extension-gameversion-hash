@@ -1,12 +1,19 @@
 import crypto from 'crypto';
 import path from 'path';
-import { fs, log, types, util } from 'vortex-api';
+import { fs, log, types, selectors, util } from 'vortex-api';
 
 import sessionReducer from './reducers/session';
 
 import { getUserFacingVersion } from './hashMapper';
 
-import { GameVersionProviderFunc, GameVersionProviderTest, IHashingDetails } from './types/types';
+import { GameVersionProviderFunc, GameVersionProviderTest, IHashEntry, IHashingDetails } from './types/types';
+
+import { setShowHashDialog } from './actions/session';
+import FileHashingDialog from './views/FileHashingDialog';
+import { DEBUG_MODE, HASHMAP_LOCAL_PATH, TEMP_PATH, WD_NAME } from './constants';
+import { hashMapFromFile } from './hashMapper';
+
+import { generate } from 'shortid';
 
 async function generateHash(filePath: string): Promise<string> {
   const hash = crypto.createHash('md5');
@@ -94,7 +101,7 @@ async function getHashVersion(api: types.IExtensionApi,
   }
   const details: IHashingDetails = game.details;
   const szip: util.SevenZip = new util.SevenZip();
-  const archiveDestination = path.join(util.getVortexPath('temp'), 'hash.7z');
+  const archiveDestination = path.join(TEMP_PATH, generate() + 'hash.7z');
   try {
     // Just in case.
     await fs.removeAsync(archiveDestination);
@@ -144,7 +151,87 @@ function main(context: types.IExtensionContext) {
       .then(ver => cb(null, ver))
       .catch(err => cb(err, null));
 
-}, { minArguments: 3 });
+  }, { minArguments: 3 });
+
+  context.registerDialog('file-hashing-dialog', FileHashingDialog, () => ({
+    onGenerateHashingEntry: async (filePaths: string[]) => {
+      context.api.sendNotification({
+        type: 'activity',
+        message: 'Generating hash',
+        id: 'generating-hash-notif',
+        allowSuppress: false,
+        noDismiss: true,
+      });
+      const archiveDestination = path.join(TEMP_PATH, generate() + 'hash.7z');
+      const szip: util.SevenZip = new util.SevenZip();
+      try {
+        // Just in case.
+        await fs.removeAsync(archiveDestination);
+      } catch (err) {
+        // nop
+      }
+      try {
+        await szip.add(archiveDestination, filePaths);
+      } catch (err) {
+        await fs.removeAsync(archiveDestination);
+      }
+      const hash = await generateHash(archiveDestination);
+      await fs.removeAsync(archiveDestination);
+      const state = context.api.getState();
+      const gameId = selectors.activeGameId(state);
+      const res = await context.api.showDialog('info', 'Enter Hash Entry Values', {
+        text: 'Insert below information',
+        input: [
+          { id: 'gameId', label: 'GameId', type: 'text', value: gameId },
+          { id: 'userFacingVersion', label: 'User Facing Version', type: 'text' },
+          { id: 'variant', label: 'Variant (game store)', type: 'text' },
+        ],
+        checkboxes: [
+          { id: 'openFileLocation', value: false, text: 'Open File Location' },
+        ]
+      },
+      [ { label: 'Cancel' }, { label: 'Save' } ]);
+      if (res.action === 'Save') {
+        try {
+          const discovery = selectors.discoveryByGame(state, res.input['gameId']);
+          if (!discovery?.path) {
+            throw new util.ProcessCanceled('Game is not discovered', res.input['gameId']);
+          }
+          const entry: IHashEntry = {
+            files: filePaths.map(file => path.relative(discovery.path, file)),
+            hashValue: hash,
+            userFacingVersion: res.input['userFacingVersion'],
+            variant: res.input['variant'],
+          }
+          const data = await hashMapFromFile();
+          data[res.input['gameId']][entry.hashValue] = entry;
+          await util.writeFileAtomic(HASHMAP_LOCAL_PATH, JSON.stringify(data, undefined, 2));
+          if (res.input['openFileLocation']) {
+            util.opn(path.dirname(HASHMAP_LOCAL_PATH)).catch(err => null);
+          }
+        } catch (err) {
+          context.api.showErrorNotification('Failed to save hash entry', err, { allowReport: false });
+        }
+      }
+
+      context.api.dismissNotification('generating-hash-notif');
+    }
+  }));
+
+  context.registerAction('mod-icons', 300, 'settings', {}, 'Generate Hash Entry', () => {
+    context.api.store.dispatch(setShowHashDialog(true));
+  }, () => DEBUG_MODE);
+  context.once(() => {
+    const wdPath = path.join(TEMP_PATH, WD_NAME);
+    if (DEBUG_MODE) {
+      const git = require('simple-git/promise');
+      const gitBootstrap = git();
+      gitBootstrap.clone('https://github.com/Nexus-Mods/Vortex.git', wdPath, ['--single-branch', '--branch', 'announcements'])
+        .catch(err => err.message.includes('already exists')
+          ? git(wdPath).pull()
+          : Promise.reject(err));
+    }
+  });
   return true;
 }
 
