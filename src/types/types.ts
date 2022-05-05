@@ -1,6 +1,7 @@
 import { types } from 'vortex-api';
+import { HashMapper } from '../hashMapper';
 export type HashFunc = (files: string[]) => Promise<string>;
-export type GameVersionProviderFunc = (api: types.IExtensionApi,
+export type GameVersionProviderFunc = (hashMapper: HashMapper,
                                        game: types.IGame,
                                        discovery: types.IDiscoveryResult) => Promise<string>;
 export type GameVersionProviderTest =
@@ -11,10 +12,6 @@ export type GameVersionProviderTest =
 export interface IHashingDetails {
   // The files meant to be used in the hashing process
   hashFiles?: string[];
-
-  // Explicitly tells the gameversion hashing mechanism to ignore this game
-  //  entry.
-  ignoreHashing?: boolean;
 
   // WARNING - specifying a hash directory path
   //  will cause this extension to create a 7z archive
