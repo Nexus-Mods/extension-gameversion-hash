@@ -78,24 +78,16 @@ async function testViability(game: types.IGame,
         log('warn', 'details.files should only contain filepaths, not directories', filePath);
         return false;
       }
-      if (filePathInfo.exists) {
+      if (!filePathInfo.exists) {
         log('warn', 'required file for game version hashing is missing', filePath);
         return false;
       }
     }
 
-    return false;
+    return true;
   }
 
-  const filePaths = game.requiredFiles.map(file => path.join(discovery.path, file));
-  for (const filePath of filePaths) {
-    try {
-      await fs.statAsync(filePath);
-    } catch (err) {
-      return false;
-    }
-  }
-  return true;
+  return false;
 }
 
 async function getHashVersion(hashMapper: HashMapper,
