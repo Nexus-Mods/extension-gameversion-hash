@@ -169,7 +169,7 @@ function main(context: types.IExtensionContext) {
   let hashMapper;
   const testFunc: GameVersionProviderTest = testViability;
   const getGameVersionFunc: GameVersionProviderFunc = getHashVersion;
-  context?.['registerGameVersionProvider']('hash-version-check', 125, testFunc,
+  context?.['registerGameVersionProvider']('hash-version-check', 75, testFunc,
     (game, discovery) => getGameVersionFunc(hashMapper, game, discovery));
 
   context.registerAPI('getHashVersion', (game: types.IGame,
