@@ -65,10 +65,6 @@ async function testViability(game: types.IGame,
   }
 
   if (details?.hashFiles) {
-    if (!Array.isArray(details.hashFiles)) {
-      details.hashFiles = [details.hashFiles];
-    }
-
     for (let filePath of details.hashFiles) {
       if (!path.isAbsolute(filePath)) {
         filePath = path.join(discovery.path, filePath);
