@@ -230,6 +230,9 @@ function main(context: types.IExtensionContext) {
               variant: res.input['variant'],
             };
             const data = await hashMapper.hashMapFromFile();
+            if (!data[res.input['gameId']]) {
+              data[res.input['gameId']] = {};
+            }
             data[res.input['gameId']][entry.hashValue] = entry;
             await util.writeFileAtomic(HASHMAP_LOCAL_PATH, JSON.stringify(data, undefined, 2));
             if (res.input['openFileLocation']) {
