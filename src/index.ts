@@ -128,16 +128,22 @@ async function getHashDetails(api: types.IExtensionApi,
   if (quick) {
     return details;
   }
-  let filePaths: string[];
+  let filePaths: string[] = [];
   if (details.hashFiles !== undefined) {
     filePaths = details.hashFiles.map(file => (path.isAbsolute(file))
       ? file : path.join(discovery.path, file));
   } else if (details.hashDirPath) {
     try {
-      const hashPath = details.hashDirPath;
-      filePaths = (await fs.readdirAsync(hashPath))
-        .map(file => path.join(hashPath, file))
-        .filter(async filePath => (await queryPath(filePath)).isFile);
+      const hashPath = path.isAbsolute(details.hashDirPath)
+        ? details.hashDirPath : path.join(discovery.path, details.hashDirPath);
+      const dirContents = await fs.readdirAsync(hashPath);
+      for (const entry of dirContents) {
+        const filePath = path.join(hashPath, entry);
+        const fileInfo = await queryPath(filePath);
+        if (fileInfo.isFile) {
+          filePaths.push(filePath);
+        }
+      }
     } catch (err) {
       // nop
     }
