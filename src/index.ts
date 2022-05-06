@@ -205,7 +205,13 @@ function main(context: types.IExtensionContext) {
           return;
         }
         const filePaths = details.hashFiles;
-        const hash = await generateHash(filePaths);
+        let hash;
+        try {
+          hash = await generateHash(filePaths);
+        } catch (err) {
+          context.api.showErrorNotification('Failed to generate hash', err, { allowReport: false })
+          return;
+        }
         const state = context.api.getState();
         const gameId = selectors.activeGameId(state);
         const res = await raiseHashEntryDialog(context.api, gameId);
