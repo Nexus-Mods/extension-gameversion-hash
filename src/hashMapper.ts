@@ -25,9 +25,7 @@ export class HashMapper {
     }
   }
 
-  public async getUserFacingVersion(hash: string) {
-    const state = this.mApi.getState();
-    const gameId = selectors.activeGameId(state);
+  public async getUserFacingVersion(hash: string, gameId: string) {
     let gameHashMap = util.getSafe(this.mHashMap, [gameId], undefined);
     if (!gameHashMap) {
       gameHashMap = await this.updateHashMap(gameId);

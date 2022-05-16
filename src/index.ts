@@ -114,7 +114,7 @@ async function getHashVersion(hashMapper: HashMapper,
     if (!cacheValue) {
       hashMapper.insertToCache(cacheKey, hash);
     }
-    return hashMapper.getUserFacingVersion(hash);
+    return hashMapper.getUserFacingVersion(hash, game.id);
   }
 }
 
