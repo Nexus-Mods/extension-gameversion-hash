@@ -70,12 +70,12 @@ async function testViability(game: types.IGame,
         filePath = path.join(discovery.path, filePath);
       }
       const filePathInfo = await queryPath(filePath);
-      if (!filePathInfo.isFile) {
-        log('warn', 'details.files should only contain filepaths, not directories', filePath);
-        return false;
-      }
       if (!filePathInfo.exists) {
         log('warn', 'required file for game version hashing is missing', filePath);
+        return false;
+      }
+      if (!filePathInfo.isFile) {
+        log('warn', 'details.files should only contain filepaths, not directories', filePath);
         return false;
       }
     }
