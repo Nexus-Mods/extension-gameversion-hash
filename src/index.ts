@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import path from 'path';
-import { actions, fs, log, selectors, types, util } from 'vortex-api';
+import { fs, log, selectors, types, util } from 'vortex-api';
 
 import { HashMapper } from './hashMapper';
 
@@ -9,6 +9,41 @@ import { GameVersionProviderFunc, GameVersionProviderTest, IHashEntry, IHashingD
 import { DEBUG_MODE, HASHMAP_LOCAL_PATH, TEMP_PATH, WD_NAME } from './constants';
 
 import { fileMD5 } from 'vortexmt';
+
+type GameHashCache = { [gameId: string]: string };
+const CACHE: GameHashCache = {};
+
+async function insertCacheEntry(hashMapper: HashMapper,
+                                game: types.IGame,
+                                discovery: types.IDiscoveryResult): Promise<void> {
+  if (!isGameValid(game, discovery)) {
+    return;
+  }
+  const details: IHashingDetails = game.details;
+  const hashPath = details?.hashDirPath
+    ? path.isAbsolute(details.hashDirPath)
+      ? details.hashDirPath
+      : path.join(discovery.path, details.hashDirPath)
+    : undefined;
+  const files = (details?.hashFiles)
+    ? details.hashFiles
+    : hashPath
+      ? (await fs.readdirAsync(hashPath))
+        .map(file => path.join(hashPath, file))
+        .filter(async filePath => (await queryPath(filePath)).isFile)
+      : [];
+  if (files.length > 0) {
+    const filePaths = files.map(file =>
+      path.isAbsolute(file) ? file : path.join(discovery.path, file));
+    const cacheKey = await hashMapper.generateCacheKey(filePaths);
+    const cacheValue = hashMapper.getCacheValue(cacheKey);
+    const hash =  (cacheValue) ? cacheValue : await generateHash(filePaths);
+    if (!cacheValue) {
+      hashMapper.insertToCache(cacheKey, hash);
+    }
+    CACHE[game.id] = await hashMapper.getUserFacingVersion(hash, game.id);
+  }
+}
 
 function nop() {
   // nop
@@ -89,33 +124,10 @@ async function testViability(game: types.IGame,
 async function getHashVersion(hashMapper: HashMapper,
                               game: types.IGame,
                               discovery: types.IDiscoveryResult): Promise<string> {
-  if (!isGameValid(game, discovery)) {
-    return Promise.reject(new Error('Game is not discovered'));
+  if (CACHE[game.id] === undefined) {
+    await insertCacheEntry(hashMapper, game, discovery);
   }
-  const details: IHashingDetails = game.details;
-  const hashPath = details?.hashDirPath
-    ? path.isAbsolute(details.hashDirPath)
-      ? details.hashDirPath
-      : path.join(discovery.path, details.hashDirPath)
-    : undefined;
-  const files = (details?.hashFiles)
-    ? details.hashFiles
-    : hashPath
-      ? (await fs.readdirAsync(hashPath))
-        .map(file => path.join(hashPath, file))
-        .filter(async filePath => (await queryPath(filePath)).isFile)
-      : [];
-  if (files.length > 0) {
-    const filePaths = files.map(file =>
-      path.isAbsolute(file) ? file : path.join(discovery.path, file));
-    const cacheKey = await hashMapper.generateCacheKey(filePaths);
-    const cacheValue = hashMapper.getCacheValue(cacheKey);
-    const hash =  (cacheValue) ? cacheValue : await generateHash(filePaths);
-    if (!cacheValue) {
-      hashMapper.insertToCache(cacheKey, hash);
-    }
-    return hashMapper.getUserFacingVersion(hash, game.id);
-  }
+  return CACHE[game.id];
 }
 
 async function getHashDetails(api: types.IExtensionApi,
