@@ -184,7 +184,7 @@ function raiseHashEntryDialog(api: types.IExtensionApi, gameId?: string) {
 }
 
 function main(context: types.IExtensionContext) {
-  let hashMapper;
+  const hashMapper = new HashMapper(context.api);
   const testFunc: GameVersionProviderTest = testViability;
   const getGameVersionFunc: GameVersionProviderFunc = getHashVersion;
   context?.['registerGameVersionProvider']('hash-version-check', 75, testFunc,
@@ -286,7 +286,6 @@ function main(context: types.IExtensionContext) {
   }, () => DEBUG_MODE);
 
   context.once(() => {
-    hashMapper = new HashMapper(context.api);
     const wdPath = path.join(TEMP_PATH, WD_NAME);
     if (DEBUG_MODE) {
       const git = require('simple-git/promise');
