@@ -106,7 +106,9 @@ async function testViability(game: types.IGame,
       }
       const filePathInfo = await queryPath(filePath);
       if (!filePathInfo.exists) {
-        log('warn', 'required file for game version hashing is missing', filePath);
+        // this logged a warning in the past but the way it's being used, hashing may be used
+        // only on specific variants of the game while others fall back to getting the version
+        // from the exe so this is perfectly acceptable
         return false;
       }
       if (!filePathInfo.isFile) {
