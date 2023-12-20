@@ -292,7 +292,7 @@ function main(context: types.IExtensionContext) {
     if (DEBUG_MODE) {
       const git = require('simple-git/promise');
       const gitBootstrap = git();
-      gitBootstrap.clone('https://github.com/Nexus-Mods/Vortex.git', wdPath, ['--single-branch', '--branch', 'announcements'])
+      gitBootstrap.clone('https://github.com/Nexus-Mods/Vortex-Backend.git', wdPath)
         .catch(err => err.message.includes('already exists')
           ? git(wdPath).pull()
           : Promise.reject(err));
