@@ -8,4 +8,4 @@ export const HASHMAP_LINK =
 export const DEBUG_MODE: boolean = false;
 export const WD_NAME = 'vortex';
 export const TEMP_PATH = path.join(util.getVortexPath('temp'), 'gameversion_hash');
-export const HASHMAP_LOCAL_PATH = path.join(TEMP_PATH, WD_NAME, HASHMAP_FILENAME);
+export const HASHMAP_LOCAL_PATH = path.join(TEMP_PATH, WD_NAME, 'out', HASHMAP_FILENAME);
