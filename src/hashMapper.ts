@@ -58,7 +58,12 @@ export class HashMapper {
   }
 
   private getHTTPData(link: string): Promise<IHashMap> {
-    const sanitizedURL = url.parse(link);
+    let sanitizedURL;
+    try {
+      sanitizedURL = new URL(link);
+    } catch (err) {
+      return Promise.reject(new Error(`Invalid URL: ${link}`));
+    }
     return new Promise((resolve, reject) => {
       https.get(sanitizedURL.href, res => {
         res.setEncoding('utf-8');
